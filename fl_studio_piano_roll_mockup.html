@@ -1,0 +1,337 @@
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-mono, monospace); }
+.fl-app { background: #1a1a2e; color: #e0e0e0; border-radius: var(--border-radius-lg); overflow: hidden; border: 1px solid #333; user-select: none; }
+.fl-topbar { display: flex; align-items: center; gap: 0; background: #16213e; border-bottom: 1px solid #333; height: 38px; }
+.tb-section { display: flex; align-items: center; gap: 8px; padding: 0 12px; height: 100%; border-right: 1px solid #333; }
+.tb-label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
+.tb-val { font-size: 13px; font-weight: 500; color: #e0e0e0; min-width: 28px; text-align: center; }
+.tb-btn { background: #0f3460; border: 1px solid #1a5276; color: #a0cfff; border-radius: 3px; font-size: 11px; padding: 2px 7px; cursor: pointer; transition: background 0.15s; }
+.tb-btn:hover { background: #1a5276; }
+.tb-btn.active { background: #e94560; border-color: #e94560; color: #fff; }
+.tb-input { background: #0f3460; border: 1px solid #1a5276; color: #a0cfff; border-radius: 3px; font-size: 12px; padding: 1px 6px; width: 44px; text-align: center; outline: none; }
+.fl-body { display: flex; height: 340px; }
+.piano-keys { width: 52px; flex-shrink: 0; background: #111; border-right: 1px solid #333; overflow: hidden; display: flex; flex-direction: column; }
+.key-row { display: flex; align-items: center; justify-content: flex-end; padding-right: 4px; font-size: 8px; font-weight: 500; cursor: pointer; border-bottom: 1px solid #222; flex-shrink: 0; position: relative; }
+.key-row.white { background: #d8d8d8; color: #333; height: 14px; }
+.key-row.white:hover { background: #fff; }
+.key-row.black { background: #1a1a1a; color: #888; height: 9px; border-bottom: 1px solid #111; }
+.key-row.black:hover { background: #333; }
+.key-row.c-note { background: #c8e6ff; color: #1a5276; }
+.grid-area { flex: 1; overflow: hidden; position: relative; background: #1a1a2e; }
+.grid-header { height: 20px; background: #16213e; border-bottom: 1px solid #444; display: flex; align-items: center; overflow: hidden; }
+.beat-label { font-size: 9px; color: #666; flex-shrink: 0; text-align: left; padding-left: 3px; border-left: 1px solid #333; }
+.grid-rows { overflow-y: hidden; overflow-x: hidden; height: 320px; position: relative; }
+.grid-canvas { position: relative; }
+.grid-row { display: flex; height: 14px; border-bottom: 1px solid #222; }
+.grid-row.black-row { background: #161625; }
+.grid-row.white-row { background: #1e1e30; }
+.grid-row.c-row { background: #162030; border-bottom: 1px solid #2a4060; }
+.grid-cell { flex-shrink: 0; border-right: 1px solid #242435; height: 100%; cursor: pointer; transition: background 0.1s; }
+.grid-cell.beat { border-right: 1px solid #3a3a55; }
+.grid-cell.bar { border-right: 1px solid #555; }
+.grid-cell:hover { background: rgba(100,160,255,0.15) !important; }
+.note-block { position: absolute; background: #3b82f6; border-radius: 2px; cursor: pointer; z-index: 5; transition: filter 0.1s; border: 1px solid #60a5fa; }
+.note-block:hover { filter: brightness(1.3); }
+.note-block.green { background: #22c55e; border-color: #4ade80; }
+.note-block.amber { background: #f59e0b; border-color: #fbbf24; }
+.note-block.red { background: #ef4444; border-color: #f87171; }
+.fl-bottom { height: 120px; background: #111827; border-top: 1px solid #333; display: flex; }
+.instrument-list { width: 160px; flex-shrink: 0; border-right: 1px solid #333; overflow-y: auto; }
+.inst-header { font-size: 10px; color: #666; padding: 6px 10px 4px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #222; }
+.inst-item { display: flex; align-items: center; gap: 8px; padding: 5px 10px; cursor: pointer; font-size: 11px; color: #aaa; border-bottom: 1px solid #1a1a2e; transition: background 0.1s; }
+.inst-item:hover, .inst-item.active { background: #1e3a5f; color: #a0cfff; }
+.inst-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.note-chooser { flex: 1; display: flex; flex-direction: column; }
+.nc-header { font-size: 10px; color: #666; padding: 6px 10px 4px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center; }
+.note-grid { display: flex; flex-wrap: wrap; gap: 4px; padding: 8px 10px; overflow-y: auto; flex: 1; }
+.note-chip { font-size: 11px; padding: 3px 9px; border-radius: 3px; cursor: pointer; background: #1e293b; border: 1px solid #334; color: #94a3b8; transition: all 0.1s; }
+.note-chip:hover { background: #1e3a5f; color: #a0cfff; border-color: #3b82f6; }
+.note-chip.active { background: #1d4ed8; color: #fff; border-color: #3b82f6; }
+.note-chip.black-key { background: #111; color: #666; border-color: #222; }
+.note-chip.black-key:hover { background: #1e293b; color: #94a3b8; }
+.scrollbar-area { width: 14px; background: #111; border-left: 1px solid #222; }
+</style>
+
+<h2 class="sr-only">FL Studio Piano Roll - mockup sekvencera sa klavijaturom, notesom i kontrolama</h2>
+
+<div class="fl-app">
+
+  <div class="fl-topbar">
+    <div class="tb-section" style="gap:4px; min-width:120px;">
+      <span class="tb-label">Instrument</span>
+      <select class="tb-input" style="width:90px; font-size:11px;">
+        <option>Piano</option>
+        <option>Bass</option>
+        <option>Lead Synth</option>
+        <option>Drums</option>
+        <option>Pad</option>
+      </select>
+    </div>
+    <div class="tb-section" style="gap:6px;">
+      <span class="tb-label">Track</span>
+      <button class="tb-btn" id="prev-track">◀</button>
+      <span class="tb-val" id="track-num">1</span>
+      <button class="tb-btn" id="next-track">▶</button>
+    </div>
+    <div class="tb-section" style="gap:6px;">
+      <span class="tb-label">BPM</span>
+      <button class="tb-btn" id="bpm-down">−</button>
+      <span class="tb-val" id="bpm-val">140</span>
+      <button class="tb-btn" id="bpm-up">+</button>
+    </div>
+    <div class="tb-section" style="gap:6px;">
+      <span class="tb-label">Vol</span>
+      <input type="range" min="0" max="100" value="80" id="vol-slider" style="width:60px;">
+      <span class="tb-val" id="vol-val" style="font-size:11px;">80</span>
+    </div>
+    <div class="tb-section" style="gap:6px;">
+      <span class="tb-label">Takt</span>
+      <button class="tb-btn" id="time-btn">4/4</button>
+    </div>
+    <div class="tb-section" style="gap:6px; border-right: none;">
+      <button class="tb-btn active" id="play-btn">▶ Play</button>
+      <button class="tb-btn" id="stop-btn">■ Stop</button>
+    </div>
+  </div>
+
+  <div class="fl-body">
+    <div class="piano-keys" id="piano-keys"></div>
+
+    <div class="grid-area">
+      <div class="grid-header" id="grid-header"></div>
+      <div class="grid-rows" id="grid-rows"></div>
+    </div>
+  </div>
+
+  <div class="fl-bottom">
+    <div class="instrument-list">
+      <div class="inst-header">Instrumenti</div>
+      <div id="inst-list"></div>
+    </div>
+    <div class="note-chooser">
+      <div class="nc-header">
+        <span>Tonovi — klikni da ubaciš u grid</span>
+        <span id="active-octave" style="color:#3b82f6; font-size:11px;">Oktava 4</span>
+      </div>
+      <div class="note-grid" id="note-grid"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const IS_BLACK = [false,true,false,true,false,false,true,false,true,false,true,false];
+const OCTAVES = [6,5,4,3,2,1];
+const COLS = 32;
+const CELL_W = 18;
+
+const noteColors = ['green','','','amber','','','','red','','','',''];
+
+const instruments = [
+  {name:'Piano', color:'#3b82f6'},
+  {name:'Bass', color:'#22c55e'},
+  {name:'Lead Synth', color:'#f59e0b'},
+  {name:'Pad', color:'#a855f7'},
+  {name:'Drums', color:'#ef4444'},
+];
+
+let activeInst = 0;
+let bpm = 140;
+let trackNum = 1;
+let vol = 80;
+let timeSig = 0;
+const timeSigs = ['4/4','3/4','6/8','7/8'];
+let activeNote = null;
+let placedNotes = {};
+
+const keys = [];
+OCTAVES.forEach(oct => {
+  NOTE_NAMES.forEach((n, i) => {
+    keys.push({ name: n, oct, isBlack: IS_BLACK[i], label: n === 'C' ? `${n}${oct}` : (IS_BLACK[i] ? '' : n) });
+  });
+});
+
+function renderPiano() {
+  const el = document.getElementById('piano-keys');
+  el.innerHTML = '';
+  keys.forEach((k, i) => {
+    const row = document.createElement('div');
+    row.className = 'key-row ' + (k.isBlack ? 'black' : (k.name === 'C' ? 'c-note' : 'white'));
+    row.style.height = k.isBlack ? '9px' : '14px';
+    row.textContent = k.label;
+    row.title = k.name + k.oct;
+    el.appendChild(row);
+  });
+}
+
+function renderGridHeader() {
+  const el = document.getElementById('grid-header');
+  el.innerHTML = '';
+  for (let c = 0; c < COLS; c++) {
+    const cell = document.createElement('div');
+    cell.className = 'beat-label';
+    cell.style.width = CELL_W + 'px';
+    cell.style.flex = 'none';
+    cell.style.borderLeft = c % 4 === 0 ? '1px solid #555' : c % 2 === 0 ? '1px solid #333' : '1px solid #222';
+    if (c % 4 === 0) cell.textContent = (c/4 + 1);
+    el.appendChild(cell);
+  }
+}
+
+function renderGrid() {
+  const el = document.getElementById('grid-rows');
+  el.innerHTML = '';
+  keys.forEach((k, ri) => {
+    const row = document.createElement('div');
+    row.className = 'grid-row ' + (k.isBlack ? 'black-row' : k.name === 'C' ? 'c-row' : 'white-row');
+    row.style.height = k.isBlack ? '9px' : '14px';
+    row.style.position = 'relative';
+    row.style.display = 'flex';
+
+    for (let c = 0; c < COLS; c++) {
+      const cell = document.createElement('div');
+      cell.className = 'grid-cell' + (c % 4 === 0 ? ' bar' : c % 2 === 0 ? ' beat' : '');
+      cell.style.width = CELL_W + 'px';
+      cell.style.flexShrink = '0';
+      cell.dataset.row = ri;
+      cell.dataset.col = c;
+      cell.addEventListener('click', () => toggleNote(ri, c, cell));
+      row.appendChild(cell);
+    }
+    el.appendChild(row);
+  });
+  redrawNotes();
+}
+
+function toggleNote(ri, c, cellEl) {
+  const key = ri + ',' + c;
+  if (placedNotes[key]) {
+    delete placedNotes[key];
+  } else {
+    placedNotes[key] = { color: instruments[activeInst].color, inst: activeInst };
+  }
+  redrawNotes();
+}
+
+function redrawNotes() {
+  const el = document.getElementById('grid-rows');
+  el.querySelectorAll('.note-block').forEach(e => e.remove());
+  const rows = el.querySelectorAll('.grid-row');
+  Object.entries(placedNotes).forEach(([key, note]) => {
+    const [ri, c] = key.split(',').map(Number);
+    const row = rows[ri];
+    if (!row) return;
+    const cells = row.querySelectorAll('.grid-cell');
+    const cell = cells[c];
+    if (!cell) return;
+    const nb = document.createElement('div');
+    nb.className = 'note-block';
+    nb.style.left = (c * CELL_W) + 'px';
+    nb.style.top = '0px';
+    nb.style.width = (CELL_W - 1) + 'px';
+    nb.style.height = (keys[ri].isBlack ? 8 : 13) + 'px';
+    nb.style.background = note.color;
+    nb.style.borderColor = note.color + 'dd';
+    nb.style.position = 'absolute';
+    nb.addEventListener('click', (e) => {
+      e.stopPropagation();
+      delete placedNotes[key];
+      redrawNotes();
+    });
+    row.style.position = 'relative';
+    row.appendChild(nb);
+  });
+}
+
+function renderInstList() {
+  const el = document.getElementById('inst-list');
+  el.innerHTML = '';
+  instruments.forEach((inst, i) => {
+    const item = document.createElement('div');
+    item.className = 'inst-item' + (i === activeInst ? ' active' : '');
+    item.innerHTML = `<div class="inst-dot" style="background:${inst.color}"></div><span>${inst.name}</span>`;
+    item.addEventListener('click', () => { activeInst = i; renderInstList(); });
+    el.appendChild(item);
+  });
+}
+
+function renderNoteGrid() {
+  const el = document.getElementById('note-grid');
+  el.innerHTML = '';
+  const oct = 4;
+  NOTE_NAMES.forEach((n, i) => {
+    const chip = document.createElement('div');
+    chip.className = 'note-chip' + (IS_BLACK[i] ? ' black-key' : '');
+    chip.textContent = n + oct;
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('.note-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      activeNote = { name: n, oct, idx: i };
+    });
+    el.appendChild(chip);
+  });
+  [3,5].forEach(oct2 => {
+    NOTE_NAMES.forEach((n, i) => {
+      const chip = document.createElement('div');
+      chip.className = 'note-chip' + (IS_BLACK[i] ? ' black-key' : '');
+      chip.textContent = n + oct2;
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('.note-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        activeNote = { name: n, oct: oct2, idx: i };
+      });
+      el.appendChild(chip);
+    });
+  });
+}
+
+document.getElementById('bpm-up').addEventListener('click', () => {
+  bpm = Math.min(999, bpm + 1);
+  document.getElementById('bpm-val').textContent = bpm;
+});
+document.getElementById('bpm-down').addEventListener('click', () => {
+  bpm = Math.max(20, bpm - 1);
+  document.getElementById('bpm-val').textContent = bpm;
+});
+document.getElementById('prev-track').addEventListener('click', () => {
+  trackNum = Math.max(1, trackNum - 1);
+  document.getElementById('track-num').textContent = trackNum;
+});
+document.getElementById('next-track').addEventListener('click', () => {
+  trackNum = Math.min(99, trackNum + 1);
+  document.getElementById('track-num').textContent = trackNum;
+});
+document.getElementById('vol-slider').addEventListener('input', function() {
+  vol = this.value;
+  document.getElementById('vol-val').textContent = vol;
+});
+document.getElementById('time-btn').addEventListener('click', function() {
+  timeSig = (timeSig + 1) % timeSigs.length;
+  this.textContent = timeSigs[timeSig];
+});
+document.getElementById('play-btn').addEventListener('click', function() {
+  this.classList.toggle('active');
+});
+document.getElementById('stop-btn').addEventListener('click', () => {
+  document.getElementById('play-btn').classList.remove('active');
+});
+
+renderPiano();
+renderGridHeader();
+renderGrid();
+renderInstList();
+renderNoteGrid();
+
+placedNotes = {
+  '12,0':{color:'#3b82f6',inst:0},'12,2':{color:'#3b82f6',inst:0},
+  '14,4':{color:'#3b82f6',inst:0},'10,6':{color:'#22c55e',inst:1},
+  '16,8':{color:'#3b82f6',inst:0},'18,10':{color:'#f59e0b',inst:2},
+  '20,12':{color:'#3b82f6',inst:0},'22,14':{color:'#3b82f6',inst:0},
+  '10,16':{color:'#22c55e',inst:1},'14,18':{color:'#3b82f6',inst:0},
+  '8,20':{color:'#a855f7',inst:3},'6,22':{color:'#f59e0b',inst:2},
+};
+redrawNotes();
+</script>
